@@ -4,15 +4,17 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import GoogleButton from "@/components/GoogleButton";
 
 export default function LoginPage() {
-  const { logIn, resetPassword } = useAuth();
+  const { logIn, signInWithGoogle, resetPassword } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,6 +28,20 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : "Log in failed");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    setInfo(null);
+    setGoogleSubmitting(true);
+    try {
+      await signInWithGoogle();
+      router.replace("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -84,6 +100,18 @@ export default function LoginPage() {
         >
           {submitting ? "Logging in…" : "Log in"}
         </button>
+
+        <div className="flex items-center gap-3 text-xs text-gray-400">
+          <div className="flex-1 border-t border-gray-200" />
+          or
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
+        <GoogleButton
+          onClick={handleGoogle}
+          disabled={googleSubmitting}
+          label={googleSubmitting ? "Signing in…" : "Continue with Google"}
+        />
 
         <div className="flex justify-between text-sm">
           <button

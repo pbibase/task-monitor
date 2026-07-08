@@ -5,7 +5,7 @@ Collaborative task management app (Next.js + Firebase), built from the SRS in [d
 ## 1. Create a Firebase project
 
 1. Go to https://console.firebase.google.com and create a project (Google Analytics optional).
-2. **Authentication** → Sign-in method → enable **Email/Password**.
+2. **Authentication** → Sign-in method → enable **Email/Password** and **Google**.
 3. **Firestore Database** → Create database → start in **production mode** (rules are provided below).
 4. Project settings → General → "Your apps" → Add app → Web (`</>`) → copy the config values.
 
@@ -34,30 +34,28 @@ npm run dev
 ```
 
 Open http://localhost:3000. Sign up as a **Manager** to create/assign tasks, or as an **Assignee** to work them.
+You can also use **Continue with Google** — first-time Google sign-ins land on `/complete-profile`
+to pick a display name and role (Google auth has no role field, unlike email/password signup).
 
-## 5. Deploy to your own host (shared hosting / cPanel / FTP)
+### Firestore composite indexes
 
-This app has no server-side code (no API routes, everything talks to Firebase directly from
-the browser), so `next.config.ts` is set to `output: "export"`. Building produces a plain
-static site in `out/` — no Node.js server needed on the host.
+The task list queries filter by `createdBy`/`assigneeUid` and sort by `dueDate`, which Firestore
+requires a composite index for. The first time each query runs against a fresh project, the
+browser console will show a `FirebaseError: [code=failed-precondition]` with a direct link to
+create the missing index — click it, wait ~1 minute for it to build, and the error clears on its
+own. This only needs to happen once per Firebase project.
 
-1. Make sure `.env.local` has your **real** Firebase config (the static export bakes these
-   values into the JS bundle at build time).
-2. Build:
-   ```bash
-   npm run build
-   ```
-3. Upload the **contents** of the generated `out/` folder (not the folder itself) to your
-   host's public web root (e.g. `public_html/` on cPanel), via FTP/SFTP or your host's file
-   manager.
-4. In the Firebase console → Authentication → Settings → **Authorized domains**, add your
-   site's domain (e.g. `yourdomain.com`). Without this, login/signup will fail with
-   `auth/unauthorized-domain` once deployed.
+## 5. Deploy (GitHub + Vercel)
 
-Routes are exported as folders with `index.html` inside (e.g. `out/dashboard/index.html`),
-which is what most static hosts (Apache/Nginx/cPanel) serve automatically when you visit
-`/dashboard/`. If your host doesn't do this, enable directory-index serving or ask your host
-how static SPA-style sites are served.
+1. Push this repo to GitHub (create an empty repo at https://github.com/new, then `git remote add origin <url> && git push -u origin main`).
+2. https://vercel.com → **Add New → Project** → import the GitHub repo.
+3. Add the six `NEXT_PUBLIC_FIREBASE_*` values from `.env.local` under the project's
+   **Environment Variables** before deploying — Vercel builds server-side and won't have your
+   local `.env.local`.
+4. Deploy. Vercel gives you a `*.vercel.app` URL (and lets you attach a custom domain later).
+5. Firebase console → Authentication → Settings → **Authorized domains** → add the `*.vercel.app`
+   domain (and your custom domain, once attached). Without this, login/signup fails with
+   `auth/unauthorized-domain`.
 
 ## Status
 

@@ -9,9 +9,11 @@ import {
 } from "react";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -32,6 +34,7 @@ interface AuthContextValue {
     role: UserRole
   ) => Promise<void>;
   logIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -90,6 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth!, email, password);
   }
 
+  // Does not create a Firestore profile here — a Google sign-in can be a
+  // brand-new user with no role picked yet. /complete-profile handles that
+  // (see ProtectedRoute/root page redirect logic for user-without-profile).
+  async function signInWithGoogle() {
+    await signInWithPopup(auth!, new GoogleAuthProvider());
+  }
+
   async function logOut() {
     await signOut(auth!);
   }
@@ -100,7 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signUp, logIn, logOut, resetPassword }}
+      value={{
+        user,
+        profile,
+        loading,
+        signUp,
+        logIn,
+        signInWithGoogle,
+        logOut,
+        resetPassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

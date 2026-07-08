@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import GoogleButton from "@/components/GoogleButton";
 import type { UserRole } from "@/lib/types";
 
 export default function SignupPage() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ export default function SignupPage() {
   const [role, setRole] = useState<UserRole>("assignee");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,6 +29,19 @@ export default function SignupPage() {
       setError(err instanceof Error ? err.message : "Sign up failed");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    setGoogleSubmitting(true);
+    try {
+      await signInWithGoogle();
+      router.replace("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -92,6 +107,18 @@ export default function SignupPage() {
         >
           {submitting ? "Creating account…" : "Sign up"}
         </button>
+
+        <div className="flex items-center gap-3 text-xs text-gray-400">
+          <div className="flex-1 border-t border-gray-200" />
+          or
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
+        <GoogleButton
+          onClick={handleGoogle}
+          disabled={googleSubmitting}
+          label={googleSubmitting ? "Signing in…" : "Continue with Google"}
+        />
 
         <p className="text-sm text-gray-600 text-center">
           Already have an account?{" "}
